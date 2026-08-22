@@ -1,0 +1,23 @@
+---
+import Layout from '../layouts/Layout.astro';
+const posts = await Astro.glob('./posts/*.md');
+---
+<Layout title="Automotive Repair, Spare Parts & Rescue in East Africa" description="East Africa's trusted automotive blog. Toyota NZE, Fielder, Axio repair guides, genuine spare parts prices and Rescue 800 breakdown service. English & Kiswahili.">
+<h1 style="margin-top:40px">Fundi Anaongea - Car Repair & Spare Parts East Africa</h1>
+<p id="intro-en">We share daily repair guides from our YouTube. No limits. All automotive topics. Fast and easy to share on WhatsApp.</p>
+<p id="intro-sw" style="display:none">Tunashare mafunzo ya kila siku kutoka YouTube yetu. Matengenezo, bei za spare, na usaidizi barabarani.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:30px">
+{posts.map(p => (
+<a href={p.url} style="border:1px solid #eee;padding:15px;border-radius:12px;text-decoration:none;color:black;display:block">
+<h3 style="margin:0">{p.frontmatter.title}</h3>
+<p style="color:#666;font-size:14px">{p.frontmatter.date} - {p.frontmatter.tags}</p>
+</a>
+))}
+</div>
+<script>
+if(localStorage.lang==='sw'){
+document.getElementById('intro-en').style.display='none';
+document.getElementById('intro-sw').style.display='block';
+}
+</script>
+</Layout>
