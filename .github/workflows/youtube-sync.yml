@@ -13,10 +13,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install rss-parser
-      - name: Create posts from YouTube
+      - name: Install parser
+        run: npm install rss-parser
+      - name: Sync videos
         run: |
-          node - <<'JS'
+          cat > sync.js <<'ENDJS'
           const Parser = require('rss-parser');
           const fs = require('fs');
           const path = require('path');
@@ -24,36 +25,27 @@ jobs:
           (async () => {
             const feed = await parser.parseURL('https://www.youtube.com/feeds/videos.xml?channel_id=UCjBeBu8gQM0p9aParvL3FFQ');
             console.log(`Found ${feed.items.length} videos`);
+            let dir = 'src/pages/posts';
+            if (!fs.existsSync('src/pages')) dir = 'src/content/posts';
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true});
             for (const item of feed.items) {
               const slug = item.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60) || item.id.replace('yt:video:','');
-              // Jaribu paths zote mbili
-              let dir = 'src/pages/posts';
-              if (!fs.existsSync('src/pages')) dir = 'src/content/posts';
-              if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true});
-              const file = path.join(dir, `${slug}.md`);
+              const file = path.join(dir, slug + '.md');
               if (!fs.existsSync(file)) {
                 const date = new Date(item.pubDate).toISOString().split('T')[0];
-                const safeTitle = item.title.replace(/"/g,'\\"');
-                const body = `---
-title: "${safeTitle}"
-date: ${date}
----
-
-<iframe width="100%" height="400" src="https://www.youtube.com/embed/${item.id.replace('yt:video:','')}" frameborder="0" allowfullscreen></iframe>
-
-${item.contentSnippet || ''}
-
-Watch: ${item.link}
-`;
-                fs.writeFileSync(file, body);
+                const vid = item.id.replace('yt:video:','');
+                const title = item.title.replace(/"/g,'');
+                const content = '---\ntitle: "' + title + '"\ndate: ' + date + '\n---\n\n<iframe width="100%" height="400" src="https://www.youtube.com/embed/' + vid + '" frameborder="0" allowfullscreen></iframe>\n\n' + (item.contentSnippet||'') + '\n\nWatch: ' + item.link + '\n';
+                fs.writeFileSync(file, content);
                 console.log('Created', file);
               }
             }
           })();
-          JS
-      - name: Commit and push
+          ENDJS
+          node sync.js
+      - name: Push
         run: |
           git config user.name "mbimagari-bot"
           git config user.email "bot@mbimagari.autos"
           git add -A
-          git diff --staged --quiet || (git commit -m "auto: sync youtube videos" && git push)
+          git diff --staged --quiet || (git commit -m "auto: sync" && git push)
