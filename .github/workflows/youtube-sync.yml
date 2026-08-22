@@ -13,39 +13,100 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Sync
+      - name: Sync with AEO
         run: |
           cat > sync.mjs <<'ENDJS'
-          import fs from 'fs';
-          import path from 'path';
-          const url = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCjBeBu8gQM0p9aParvL3FFQ';
-          const res = await fetch(url);
+          import fs from 'fs'; import path from 'path';
+          const CHANNEL = 'UCjBeBu8gQM0p9aParvL3FFQ';
+          const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL}`);
           const xml = await res.text();
-          console.log('Fetched', xml.length);
-          const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
-          console.log('Entries', entries.length);
-          let dir = 'src/pages/posts';
-          if (fs.existsSync('src/content')) dir = 'src/content/posts';
+          const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].reverse();
+          let dir = fs.existsSync('src/content') ? 'src/content/posts' : 'src/pages/posts';
           if (!fs.existsSync(dir)) fs.mkdirSync(dir,{recursive:true});
           let created=0;
           for (const m of entries) {
-            const entry = m[1];
-            const title = (entry.match(/<title>(.*?)<\/title>/)||[])[1]||'video';
-            const id = (entry.match(/<yt:videoId>(.*?)<\/yt:videoId>/)||[])[1]||'';
-            const published = (entry.match(/<published>(.*?)<\/published>/)||[])[1]||new Date().toISOString();
-            const link = `https://www.youtube.com/watch?v=${id}`;
+            const e = m[1];
+            const title = (e.match(/<title>(.*?)<\/title>/)||[])[1]||'';
+            const id = (e.match(/<yt:videoId>(.*?)<\/yt:videoId>/)||[])[1]||'';
+            if (!id) continue;
+            const published = (e.match(/<published>(.*?)<\/published>/)||[])[1]||new Date().toISOString();
+            const date = published.split('T')[0];
             const slug = title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60) || id;
             const file = path.join(dir, slug + '.md');
-            if (!fs.existsSync(file) && id) {
-              const date = published.split('T')[0];
-              const safeTitle = title.replace(/"/g,'').replace(/:/g,' -');
-              const content = `---\ntitle: "${safeTitle}"\ndate: ${date}\n---\n\n<iframe width="100%" height="400" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>\n\n${safeTitle}\n\nOriginal: ${link}\n`;
-              fs.writeFileSync(file, content);
-              console.log('Created', file);
-              created++;
-            }
+            if (fs.existsSync(file)) continue;
+            const safeTitle = title.replace(/"/g,'');
+            const content = `---
+          title: "${safeTitle}"
+          description: "${safeTitle} - Jifunze suluhisho kamili kutoka MbiMagari Technologies. Gari lako likiharibika Nakuru/Nairobi? Tuna rescue 24/7 na spare parts original."
+          date: ${date}
+          author: MbiMagari Technologies
+          tags: ["magari Kenya", "matengenezo ya gari", "rescue", "spare parts"]
+          image: https://img.youtube.com/vi/${id}/maxresdefault.jpg
+          ---
+
+          # ${safeTitle}
+
+          > **Jibu la haraka:** Video hii inaelezea ${safeTitle}. Tazama video hapa chini kisha soma mwongozo kamili.
+
+          <iframe width="100%" height="450" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>
+
+          ![${safeTitle}](https://img.youtube.com/vi/${id}/maxresdefault.jpg)
+
+          ## Nini Utajifunza?
+
+          1. Sababu kuu ya tatizo hili
+          2. Jinsi ya kulirekebisha mwenyewe
+          3. Wakati wa kuhitaji fundi
+
+          ## Mwongozo wa Hatua kwa Hatua
+
+          Hii ni kutoka kwa mafundi wetu wa MbiMagari Nakuru.
+
+          **Ikiwa gari limezima ghafla:**
+          - Usijaribu kuwasha mara nyingi
+          - Piga simu rescue: [rescue.mbimagari.autos](https://rescue.mbimagari.autos) - 24/7
+          - Tuma location yako WhatsApp
+
+          ## Maswali Yanayoulizwa Sana (FAQ)
+
+          **Q: Hii inatokea kwa gari gani zaidi?**
+          A: Toyota, Nissan, Mazda zote Kenya zinapata hii, hasa barabarani Nakuru-Nairobi.
+
+          **Q: Spare part inapatikana wapi?**
+          A: Tuna original spare: [spareparts.mbimagari.autos](https://spareparts.mbimagari.autos) - delivery Kenya mzima.
+
+          **Q: Gharama ni kiasi gani?**
+          A: Kutoka Ksh 1,500 diagnosis. Tuma video yako tupe quote.
+
+          ## Hitaji Msaada Haraka?
+
+          <div style="display:flex;gap:10px;margin:20px 0">
+          <a href="https://rescue.mbimagari.autos" style="background:#dc2626;color:white;padding:12px 20px;border-radius:8px;text-decoration:none">🚨 RESCUE 24/7</a>
+          <a href="https://spareparts.mbimagari.autos" style="background:#16a34a;color:white;padding:12px 20px;border-radius:8px;text-decoration:none">🛒 SPARE PARTS</a>
+          <a href="https://wa.me/254700000000" style="background:#25D366;color:white;padding:12px 20px;border-radius:8px;text-decoration:none">WhatsApp Fundi</a>
+          </div>
+
+          <script type="application/ld+json">
+          {
+            "@context": "https://schema.org",
+            "@type": "VideoObject",
+            "name": "${safeTitle}",
+            "description": "${safeTitle} - MbiMagari Technologies",
+            "thumbnailUrl": "https://img.youtube.com/vi/${id}/maxresdefault.jpg",
+            "uploadDate": "${published}",
+            "embedUrl": "https://www.youtube.com/embed/${id}",
+            "contentUrl": "https://www.youtube.com/watch?v=${id}"
           }
-          console.log('Done created', created);
+          </script>
+
+          ---
+          *Imechapishwa na MbiMagari Technologies - Nakuru, Kenya. Blog: [blog.mbimagari.autos](https://blog.mbimagari.autos) | Main: [mbimagari.autos](https://mbimagari.autos)*
+          `;
+            fs.writeFileSync(file, content);
+            console.log('Created', file);
+            created++;
+          }
+          console.log('DONE', created);
           ENDJS
           node sync.mjs
       - name: Push
@@ -53,4 +114,4 @@ jobs:
           git config user.name "mbimagari-bot"
           git config user.email "bot@mbimagari.autos"
           git add -A
-          git diff --staged --quiet || (git commit -m "auto: sync youtube" && git push)
+          git diff --staged --quiet || (git commit -m "feat: AEO optimized posts with rescue+spareparts CTAs" && git push)
