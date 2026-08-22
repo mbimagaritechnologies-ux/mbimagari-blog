@@ -1,0 +1,49 @@
+---
+const { title, description, lang = "en" } = Astro.props;
+const canonical = Astro.url.href;
+---
+<html lang={lang}>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{title} | MbimaGari - East Africa Automotive</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<link rel="alternate" hreflang="en" href={canonical} />
+<link rel="alternate" hreflang="sw" href={canonical + '?lang=sw'} />
+<link rel="alternate" hreflang="x-default" href={canonical} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content="article" />
+<meta property="og:url" content={canonical} />
+<meta property="og:site_name" content="MbimaGari" />
+<meta name="twitter:card" content="summary_large_image" />
+<script type="application/ld+json" set:html={JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": title,
+  "description": description,
+  "author": {"@type":"Organization","name":"MbimaGari Technologies"},
+  "inLanguage": ["en","sw"]
+})} />
+<style>
+body{font-family:system-ui,sans-serif;max-width:900px;margin:auto;padding:20px;line-height:1.6}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.lang-btn{border:1px solid #ddd;padding:6px 12px;border-radius:20px;background:white;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+<a href="/" style="font-weight:800;font-size:22px;text-decoration:none;color:#000">MbimaGari</a>
+<div style="display:flex;gap:10px;align-items:center">
+<a href="/" style="text-decoration:none;color:#333">Blog</a>
+<a href="https://www.youtube.com/@mbimagari" target="_blank" style="background:red;color:white;padding:8px 14px;border-radius:20px;text-decoration:none">YouTube</a>
+<button class="lang-btn" onclick="localStorage.lang=localStorage.lang==='sw'?'en':'sw';location.reload()">EN / SW</button>
+</div>
+</header>
+<slot />
+<footer style="margin-top:80px;border-top:1px solid #eee;padding-top:20px;text-align:center;color:#666">
+<p>© 2026 MbimaGari Technologies - East Africa | <a href="https://spareparts.mbimagari.autos">Spareparts</a> | <a href="https://rescue.mbimagari.autos">Rescue 800</a></p>
+</footer>
+</body>
+</html>
